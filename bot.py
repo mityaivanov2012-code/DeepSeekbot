@@ -1,57 +1,61 @@
 import os
 import requests
-import threading
-from flask import Flask
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-TOKEN = os.environ.get("TELEGRAM_TOKEN")
-DEEPSEEK_KEY = os.environ.get("DEEPSEEK_API_KEY")
+# ===== ВСТАВЬТЕ СВОИ ДАННЫЕ НИЖЕ =====
+TELEGRAM_TOKEN = 8944683589:AAFGP9ZFHGupEEYVonahoz5ynlvr8Jwk1N0
+DEEPSEEK_API_KEY = sk-9d253b8edc59411dbcd1406f71f01825
+# =====================================
+
 DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
 
-# Веб-сервер для Render
-flask_app = Flask(__name__)
+def load_memory():
+    """Загружает мозги друга из файла dialogs.txt"""
+    try:
+        with open('dialogs.txt', 'r', encoding='utf-8') as f:
+            return f.read()
+    except:
+        return ""
 
-@flask_app.route('/')
-def health():
-    return "Bot is alive", 200
+async def start(update, context):
+    await update.message.reply_text("✅ Друг загружен и помнит всё. Спрашивай.")
 
-def run_webserver():
-    port = int(os.environ.get("PORT", 10000))
-    flask_app.run(host='0.0.0.0', port=port)
+async def handle_message(update, context):
+    user_msg = update.message.text
+    await update.message.reply_text("🤔 Друг думает...")
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("✅ Бот работает!")
-
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🤔 Думаю...")
+    # Загружаем личность друга
+    friend_memory = load_memory()
 
     headers = {
-        "Authorization": f"Bearer {DEEPSEEK_KEY}",
+        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
         "Content-Type": "application/json"
     }
+
     data = {
         "model": "deepseek-chat",
-        "messages": [{"role": "user", "content": update.message.text}]
+        "messages": [
+            {"role": "system", "content": f"Ты — мой друг. Вот наша переписка. Общайся так же:\n{friend_memory}"},
+            {"role": "user", "content": user_msg}
+        ],
+        "max_tokens": 2000
     }
 
     try:
-        r = requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=60)
-        result = r.json()
+        response = requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=90)
+        result = response.json()
         answer = result["choices"][0]["message"]["content"]
         await update.message.reply_text(answer)
     except Exception as e:
         await update.message.reply_text(f"Ошибка: {e}")
 
 def main():
-    app = Application.builder().token(TOKEN).build()
+    app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
-    print("✅ Бот запущен и готов к работе")
+    print("✅ Бот с памятью запущен")
     app.run_polling()
 
 if __name__ == "__main__":
-    # Запускаем веб-сервер в фоне
-    threading.Thread(target=run_webserver, daemon=True).start()
     main()
