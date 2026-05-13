@@ -4,8 +4,8 @@ import traceback
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-TELEGRAM_TOKEN = 8944683589:AAFGP9ZFHGupEEYVonahoz5ynlvr8Jwk1N0
-DEEPSEEK_API_KEY = sk-9d253b8edc59411dbcd1406f71f01825
+TELEGRAM_TOKEN = "8944683589:AAFGP9ZFHGupEEYVonahoz5ynlvr8Jwk1N0"
+DEEPSEEK_API_KEY = "sk-9d253b8edc59411dbcd1406f71f01825"
 DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
 
 def load_memory():
